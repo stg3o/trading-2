@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-7xl mx-auto bg-surface rounded-xl shadow-md p-6 mt-8 text-beige-100">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-accent">💼 Wallet Overview</h1>
+    <label class="flex items-center space-x-2 text-sm">
+      <input id="toggleZero" type="checkbox" class="accent-accent rounded">
+      <span>Hide zero balances</span>
+    </label>
+  </div>
+
+  {% if error %}
+  <div class="bg-red-900 text-white p-4 rounded mb-4">
+    <p class="font-semibold">Error</p>
+    <p class="text-sm">{{ error }}</p>
+  </div>
+  {% endif %}
+
+  <div class="mb-4 text-lg">
+    <span>Total Portfolio Value:</span>
+    <span class="ml-2 text-accent font-semibold text-2xl">${{ total_value }}</span>
+  </div>
+
+  {% if balances %}
+  <div class="overflow-x-auto rounded-lg">
+    <table class="w-full table-auto text-sm bg-background rounded-lg">
+      <thead class="bg-surface text-beige-300 uppercase text-xs">
+        <tr>
+          <th class="px-4 py-3 text-left">Currency</th>
+          <th class="px-4 py-3 text-left">Available</th>
+          <th class="px-4 py-3 text-left">Balance</th>
+          <th class="px-4 py-3 text-left">Price</th>
+          <th class="px-4 py-3 text-left">Value</th>
+          <th class="px-4 py-3 text-left">Chart</th>
+          <th class="px-4 py-3 text-left">Trade</th>
+        </tr>
+      </thead>
+      <tbody class="text-beige-100 divide-y divide-gray-700">
+        {% for b in balances %}
+        <tr class="wallet-row {% if prices.get(b.currency, {}).get('value', 0) == 0 %}hidden-zero{% endif %}">
+          <td class="px-4 py-2">{{ b.currency }}</td>
+          <td class="px-4 py-2">{{ b.available }}</td>
+          <td class="px-4 py-2">{{ b.balance }}</td>
+          <td class="px-4 py-2">{{ prices.get(b.currency, {}).get('price', '-') }}</td>
+          <td class="px-4 py-2">{{ prices.get(b.currency, {}).get('value', '-') }}</td>
+          <td class="px-4 py-2">
+            <canvas id="spark-{{ b.currency }}" width="100" height="30"></canvas>
+          </td>
+          <td class="px-4 py-2 space-x-1">
+            <form method="post" action="/kucoin-place-order" class="inline">
+              <input type="hidden" name="symbol" value="{{ b.currency }}-USDT" />
+              <input type="hidden" name="side" value="buy" />
+              <input type="hidden" name="type" value="market" />
+              <input type="hidden" name="size" value="1" />
+              <button class="bg-green-600 hover:bg-green-700 px-2 py-1 text-xs rounded text-white">Buy</button>
+            </form>
+            <form method="post" action="/kucoin-place-order" class="inline">
+              <input type="hidden" name="symbol" value="{{ b.currency }}-USDT" />
+              <input type="hidden" name="side" value="sell" />
+              <input type="hidden" name="type" value="market" />
+              <input type="hidden" name="size" value="1" />
+              <button class="bg-red-600 hover:bg-red-700 px-2 py-1 text-xs rounded text-white">Sell</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-8 text-gray-400">
+    <p>No balances to display</p>
+    <p class="text-sm mt-2">This could be because:</p>
+    <ul class="text-sm mt-1 list-disc list-inside">
+      <li>You have no funds in your account</li>
+      <li>There was an error connecting to KuCoin</li>
+      <li>Your API credentials might be invalid</li>
+    </ul>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<!-- Hide Zero Toggle -->
+<script>
+  document.getElementById("toggleZero").addEventListener("change", function () {
+    document.querySelectorAll(".wallet-row").forEach(row => {
+      if (row.classList.contains("hidden-zero")) {
+        row.style.display = this.checked ? "none" : "";
+      }
+    });
+  });
+</script>
+
+<!-- Sparkline Loader -->
+<script>
+    window.addEventListener("DOMContentLoaded", () => {
+      {% for b in balances %}
+      const canvas = document.getElementById("spark-{{ b.currency }}");
+      const symbol = "{{ b.currency }}-USDT";
+  
+      if (canvas) {
+        fetch(`/api/chart-data?symbol=${symbol}`)
+          .then(res => res.json())
+          .then(data => {
+            if (!data.data || data.data.length === 0) return;
+  
+            const prices = data.data.map(c => parseFloat(c[2])).reverse();
+            const ctx = canvas.getContext("2d");
+  
+            new Chart(ctx, {
+              type: 'line',
+              data: {
+                labels: prices.map((_, i) => i + 1),
+                datasets: [{
+                  data: prices,
+                  borderColor: '#38bdf8',
+                  backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                  borderWidth: 1.5,
+                  pointRadius: 0,
+                  tension: 0.3
+                }]
+              },
+              options: {
+                responsive: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                  x: { display: false },
+                  y: { display: false }
+                }
+              }
+            });
+          })
+          .catch(err => console.error(`Error loading chart for ${symbol}:`, err));
+      }
+      {% endfor %}
+    });
+  </script>
+  
+{% endblock %}

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rich Quick</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            beige: {
+              50: "#fdfaf3",
+              100: "#f4efe4",
+              200: "#eae1d2",
+              300: "#ded1bd",
+              400: "#d2c1a9",
+              500: "#b9a68f",
+              600: "#93846f",
+              700: "#6e6351",
+              800: "#4a4235",
+              900: "#2a241b"
+            },
+            background: "#0b0b0c",
+            surface: "#1a1a1d",
+            accent: "#38bdf8"
+          }
+        }
+      }
+    };
+  </script>
+
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0b0b0c;
+      color: #f4efe4;
+    }
+  </style>
+</head>
+
+<body class="bg-background text-beige-100 min-h-screen">
+
+  <!-- Navbar -->
+  <nav class="bg-surface text-beige-100 shadow-md">
+    <div class="max-w-7xl mx-auto flex justify-between items-center px-4 py-3">
+        <a href="/" class="flex items-center space-x-2 text-accent font-bold text-2xl hover:text-cyan-300 transition">
+            <img src="https://cryptologos.cc/logos/bitcoin-btc-logo.svg?v=025" alt="Logo" class="w-6 h-6">
+            <span>Rich Quick</span>
+          </a>
+          
+      <div class="space-x-6 text-sm font-medium">
+        <a href="/dashboard" class="hover:text-accent transition">Dashboard</a>
+        <a href="/wallet" class="hover:text-accent transition">Wallet</a>
+        <a href="/strategies" class="hover:text-accent transition">Strategies</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Content -->
+  <main class="max-w-6xl mx-auto px-4 py-10">
+    {% block content %}
+    {% endblock %}
+  </main>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</body>
+</html>

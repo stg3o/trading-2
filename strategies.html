@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-6xl mx-auto mt-10 bg-surface p-6 rounded-xl text-beige-100 shadow-lg">
+  <h1 class="text-3xl font-bold text-cyan-400 mb-6">Strategy Backtesting</h1>
+
+  {% if error %}
+  <div class="bg-red-500 text-white p-4 rounded mb-4">
+    Error: {{ error }}
+  </div>
+  {% endif %}
+
+  <form id="backtestForm" method="get" action="/strategies" class="space-y-4">
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block mb-1 text-sm">Symbol:</label>
+        <input type="text" name="symbol" value="{{ symbol }}" placeholder="BTC-USDT"
+               class="w-full p-2 bg-gray-800 border border-gray-700 rounded text-white" />
+      </div>
+      
+      <div>
+        <label class="block mb-1 text-sm">Strategy:</label>
+        <select name="strategy" class="w-full p-2 bg-gray-800 border border-gray-700 rounded text-white">
+          <option value="ema_rsi" {% if strategy == 'ema_rsi' %}selected{% endif %}>EMA + RSI</option>
+          <option value="ema_only" {% if strategy == 'ema_only' %}selected{% endif %}>EMA + MACD</option>
+          <option value="rsi_only" {% if strategy == 'rsi_only' %}selected{% endif %}>RSI with Trend</option>
+          <option value="keltner" {% if strategy == 'keltner' %}selected{% endif %}>Keltner Channel</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-4">
+      <div>
+        <label class="block mb-1 text-sm">Start Date:</label>
+        <input type="date" name="start" id="startDate"
+               value="{{ start }}"
+               max="{{ now.strftime('%Y-%m-%d') }}"
+               class="w-full p-2 bg-gray-800 border border-gray-700 rounded text-white">
+      </div>
+      <div>
+        <label class="block mb-1 text-sm">End Date:</label>
+        <input type="date" name="end" id="endDate"
+               value="{{ end }}"
+               max="{{ now.strftime('%Y-%m-%d') }}"
+               class="w-full p-2 bg-gray-800 border border-gray-700 rounded text-white">
+      </div>
+      <div>
+        <label class="block mb-1 text-sm">Timeframe:</label>
+        <select name="interval" class="w-full p-2 bg-gray-800 border border-gray-700 rounded text-white">
+          <option value="1min" {% if interval == '1min' %}selected{% endif %}>1 minute</option>
+          <option value="15min" {% if interval == '15min' %}selected{% endif %}>15 minutes</option>
+          <option value="1hour" {% if interval == '1hour' %}selected{% endif %}>1 hour</option>
+          <option value="1day" {% if interval == '1day' or not interval %}selected{% endif %}>1 day</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="loading" class="hidden">
+      <div class="animate-pulse flex space-x-4 mb-4">
+        <div class="flex-1 space-y-4 py-1">
+          <div class="h-4 bg-gray-700 rounded w-3/4"></div>
+          <div class="space-y-2">
+            <div class="h-4 bg-gray-700 rounded"></div>
+            <div class="h-4 bg-gray-700 rounded w-5/6"></div>
+          </div>
+        </div>
+      </div>
+      <p class="text-cyan-400">Running backtest...</p>
+    </div>
+
+    <button type="submit" id="submitBtn" class="bg-cyan-500 hover:bg-cyan-600 text-black font-bold py-2 px-4 rounded">
+      Run Backtest
+    </button>
+  </form>
+
+  {% if result %}
+  <div class="mt-8 space-y-4">
+    <!-- Performance Summary -->
+    <div class="grid grid-cols-2 gap-4">
+      <!-- Key Metrics -->
+      <div class="bg-gray-800 p-4 rounded border border-gray-700">
+        <h3 class="text-lg font-semibold mb-3 text-cyan-400">Key Metrics</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-gray-400 text-sm">Total Return</p>
+            <p class="text-xl font-bold {% if result.total_return >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+              {{ result.total_return }}%
+            </p>
+          </div>
+          <div>
+            <p class="text-gray-400 text-sm">Win Rate</p>
+            <p class="text-xl font-bold text-cyan-400">{{ result.win_rate }}%</p>
+          </div>
+          <div>
+            <p class="text-gray-400 text-sm">Profit Factor</p>
+            <p class="text-xl font-bold text-cyan-400">{{ result.profit_factor }}</p>
+          </div>
+          <div>
+            <p class="text-gray-400 text-sm">Max Drawdown</p>
+            <p class="text-xl font-bold text-red-400">{{ result.max_drawdown }}%</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trade Statistics -->
+      <div class="bg-gray-800 p-4 rounded border border-gray-700">
+        <h3 class="text-lg font-semibold mb-3 text-cyan-400">Trade Statistics</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-gray-400 text-sm">Total Trades</p>
+            <p class="text-xl font-bold text-white">{{ result.total_trades }}</p>
+          </div>
+          <div>
+            <p class="text-gray-400 text-sm">Average Win</p>
+            <p class="text-xl font-bold text-green-400">{{ result.avg_win }}%</p>
+          </div>
+          <div>
+            <p class="text-gray-400 text-sm">Average Loss</p>
+            <p class="text-xl font-bold text-red-400">{{ result.avg_loss }}%</p>
+          </div>
+          <div>
+            <p class="text-gray-400 text-sm">Risk/Reward</p>
+            <p class="text-xl font-bold text-cyan-400">
+              {{ (result.avg_win / (-result.avg_loss)) | round(2) if result.avg_loss != 0 else '∞' }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trade History -->
+    {% if result.trades %}
+    <div class="bg-gray-800 rounded border border-gray-700">
+      <h3 class="text-lg font-semibold p-4 border-b border-gray-700 text-cyan-400">Trade History</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-900 text-left">
+            <tr>
+              <th class="px-4 py-2">Entry Time</th>
+              <th class="px-4 py-2">Exit Time</th>
+              <th class="px-4 py-2">Entry Price</th>
+              <th class="px-4 py-2">Exit Price</th>
+              <th class="px-4 py-2">PnL (%)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for trade in result.trades %}
+            <tr class="border-t border-gray-700 hover:bg-gray-700">
+              <td class="px-4 py-2">{{ trade.entry }}</td>
+              <td class="px-4 py-2">{{ trade.exit }}</td>
+              <td class="px-4 py-2">{{ trade.entry_price }}</td>
+              <td class="px-4 py-2">{{ trade.exit_price }}</td>
+              <td class="px-4 py-2 {% if trade.pnl >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                {{ trade.pnl }}%
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="text-yellow-400 mt-4 p-4 bg-gray-800 rounded border border-gray-700">
+      No trades were generated for the selected period and strategy.
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Strategy Information -->
+  <div class="mt-6 bg-gray-800 p-4 rounded border border-gray-700">
+    <h3 class="text-lg font-semibold mb-2 text-cyan-400">Strategy Information</h3>
+    <div class="space-y-2 text-sm text-gray-300">
+      <div class="mb-4">
+        <h4 class="font-semibold text-white">EMA + RSI</h4>
+        <p>Combines trend following with momentum. Enters when price trend aligns with RSI momentum signals. 
+           Added MACD confirmation and modified RSI levels for better accuracy.</p>
+      </div>
+      <div class="mb-4">
+        <h4 class="font-semibold text-white">EMA + MACD</h4>
+        <p>Uses multiple timeframe EMAs with MACD histogram for confirmation. 
+           Added volume confirmation and trend direction checks.</p>
+      </div>
+      <div class="mb-4">
+        <h4 class="font-semibold text-white">RSI with Trend</h4>
+        <p>Enhanced RSI strategy that includes price action confirmation and trend direction. 
+           Uses dynamic RSI levels based on market conditions.</p>
+      </div>
+      <div>
+        <h4 class="font-semibold text-white">Keltner Channel</h4>
+        <p>Volatility-based strategy using Keltner Channels with volume confirmation. 
+           Added trend confirmation using the middle line.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now);
+  thirtyDaysAgo.setDate(now.getDate() - 30);
+  
+  const startInput = document.getElementById('startDate');
+  const endInput = document.getElementById('endDate');
+  const form = document.getElementById('backtestForm');
+  
+  // Set max dates
+  const maxDate = now.toISOString().split('T')[0];
+  startInput.max = maxDate;
+  endInput.max = maxDate;
+  
+  // Set default values if not already set
+  if (!startInput.value) {
+    startInput.value = thirtyDaysAgo.toISOString().split('T')[0];
+  }
+  if (!endInput.value) {
+    endInput.value = maxDate;
+  }
+  
+  form.addEventListener('submit', function(e) {
+    const startDate = new Date(startInput.value);
+    const endDate = new Date(endInput.value);
+    
+    if (startDate > now || endDate > now) {
+      e.preventDefault();
+      alert('Please select dates in the past');
+      return;
+    }
+    
+    if (startDate > endDate) {
+      e.preventDefault();
+      alert('Start date must be before end date');
+      return;
+    }
+    
+    document.getElementById('loading').classList.remove('hidden');
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('submitBtn').textContent = 'Running...';
+  });
+});
+</script>
+{% endblock %}

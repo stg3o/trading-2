@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid grid-cols-12 gap-6">
+    <!-- Market Overview -->
+    <div class="col-span-12 lg:col-span-8">
+        <div class="bg-surface p-6 rounded-xl shadow-lg">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-accent">Market Overview</h2>
+                <select id="timeframeSelect" class="bg-background text-white px-3 py-1 rounded">
+                    <option value="1m">1m</option>
+                    <option value="5m">5m</option>
+                    <option value="15m" selected>15m</option>
+                    <option value="1h">1h</option>
+                    <option value="4h">4h</option>
+                    <option value="1d">1d</option>
+                </select>
+            </div>
+            <div id="tradingChart" class="w-full h-[500px]"></div>
+        </div>
+    </div>
+
+    <!-- Portfolio Summary -->
+    <div class="col-span-12 lg:col-span-4">
+        <div class="bg-surface p-6 rounded-xl shadow-lg">
+            <h2 class="text-xl font-bold text-accent mb-4">Portfolio Summary</h2>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <span>Total Value</span>
+                    <span class="text-xl font-bold text-green-400" id="totalValue">$0.00</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span>24h Change</span>
+                    <span class="text-lg" id="dayChange">0.00%</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span>Open Positions</span>
+                    <span id="openPositions">0</span>
+                </div>
+            </div>
+            <div class="mt-6">
+                <canvas id="portfolioChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Trades -->
+    <div class="col-span-12 lg:col-span-8">
+        <div class="bg-surface p-6 rounded-xl shadow-lg">
+            <h2 class="text-xl font-bold text-accent mb-4">Active Trades</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="text-sm text-gray-400">
+                        <tr>
+                            <th class="text-left py-2">Symbol</th>
+                            <th class="text-right">Entry Price</th>
+                            <th class="text-right">Current Price</th>
+                            <th class="text-right">PnL</th>
+                            <th class="text-right">Duration</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activeTradesBody">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Market Signals -->
+    <div class="col-span-12 lg:col-span-4">
+        <div class="bg-surface p-6 rounded-xl shadow-lg">
+            <h2 class="text-xl font-bold text-accent mb-4">Market Signals</h2>
+            <div class="space-y-4" id="marketSignals">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Risk Overview -->
+    <div class="col-span-12 lg:col-span-6">
+        <div class="bg-surface p-6 rounded-xl shadow-lg">
+            <h2 class="text-xl font-bold text-accent mb-4">Risk Overview</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-background p-4 rounded">
+                    <div class="text-sm text-gray-400">Value at Risk (95%)</div>
+                    <div class="text-xl font-bold text-accent" id="var95"></div>
+                </div>
+                <div class="bg-background p-4 rounded">
+                    <div class="text-sm text-gray-400">Portfolio Beta</div>
+                    <div class="text-xl font-bold text-accent" id="portfolioBeta"></div>
+                </div>
+                <div class="bg-background p-4 rounded">
+                    <div class="text-sm text-gray-400">Sharpe Ratio</div>
+                    <div class="text-xl font-bold text-accent" id="sharpeRatio"></div>
+                </div>
+                <div class="bg-background p-4 rounded">
+                    <div class="text-sm text-gray-400">Max Drawdown</div>
+                    <div class="text-xl font-bold text-accent" id="maxDrawdown"></div>
+                </div>
+            </div>
+            <div class="mt-4">
+                <canvas id="riskChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Metrics -->
+    <div class="col-span-12 lg:col-span-6">
+        <div class="bg-surface p-6 rounded-xl shadow-lg">
+            <h2 class="text-xl font-bold text-accent mb-4">Performance Metrics</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-background p-4 rounded">
+                    <div class="text-sm text-gray-400">Total Return</div>
+                    <div class="text-xl font-bold text-accent" id="totalReturn"></div>
+                </div>
+                <div class="bg-background p-4 rounded">
+                    <div class="text-sm text-gray-400">Win Rate</div>
+                    <div class="text-xl font-bold text-accent" id="winRate"></div>
+                </div>
+                <div class="bg-background p-4 rounded">
+                    <div class="text-sm text-gray-400">Profit Factor</div>
+                    <div class="text-xl font-bold text-accent" id="profitFactor"></div>
+                </div>
+                <div class="bg-background p-4 rounded">
+                    <div class="text-sm text-gray-400">Average Trade</div>
+                    <div class="text-xl font-bold text-accent" id="avgTrade"></div>
+                </div>
+            </div>
+            <div class="mt-4">
+                <canvas id="performanceChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trade Analysis -->
+    <div class="col-span-12">
+        <div class="bg-surface p-6 rounded-xl shadow-lg">
+            <h2 class="text-xl font-bold text-accent mb-4">Trade Analysis</h2>
+            <div class="grid grid-cols-3 gap-6">
+                <div>
+                    <canvas id="winLossChart"></canvas>
+                </div>
+                <div>
+                    <canvas id="holdingTimeChart"></canvas>
+                </div>
+                <div>
+                    <canvas id="profitDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TradingView Chart -->
+<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+// Initialize real-time updates
+const ws = new WebSocket('ws://localhost:8000/ws/market');
+let chart;
+let candleSeries;
+
+// Chart initialization
+function initChart() {
+    chart = LightweightCharts.createChart(document.getElementById('tradingChart'), {
+        layout: {
+            background: { color: '#1a1a1d' },
+            textColor: '#d1d4dc',
+        },
+        grid: {
+            vertLines: { color: '#2B2B43' },
+            horzLines: { color: '#2B2B43' },
+        },
+        crosshair: {
+            mode: LightweightCharts.CrosshairMode.Normal,
+        },
+        rightPriceScale: {
+            borderColor: '#2B2B43',
+        },
+        timeScale: {
+            borderColor: '#2B2B43',
+        },
+    });
+
+    candleSeries = chart.addCandlestickSeries();
+    
+    // Add volume
+    const volumeSeries = chart.addHistogramSeries({
+        color: '#26a69a',
+        priceFormat: {
+            type: 'volume',
+        },
+        priceScaleId: '',
+        scaleMargins: {
+            top: 0.8,
+            bottom: 0,
+        },
+    });
+}
+
+// WebSocket message handling
+ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    updateUI(data);
+};
+
+function updateUI(data) {
+    // Update price chart
+    if (candleSeries) {
+        candleSeries.update(data);
+    }
+
+    // Update portfolio value
+    document.getElementById('totalValue').textContent = 
+        `$${parseFloat(data.portfolioValue).toFixed(2)}`;
+
+    // Update day change
+    const dayChange = document.getElementById('dayChange');
+    const changePercent = parseFloat(data.dayChangePercent);
+    dayChange.textContent = `${changePercent.toFixed(2)}%`;
+    dayChange.className = changePercent >= 0 ? 'text-green-400' : 'text-red-400';
+
+    // Update market signals
+    updateMarketSignals(data.signals);
+}
+
+function updateMarketSignals(signals) {
+    const container = document.getElementById('marketSignals');
+    container.innerHTML = '';
+    
+    signals.forEach(signal => {
+        const signalElement = document.createElement('div');
+        signalElement.className = 'flex justify-between items-center p-3 bg-background rounded';
+        signalElement.innerHTML = `
+            <div>
+                <div class="font-medium">${signal.symbol}</div>
+                <div class="text-sm text-gray-400">${signal.indicator}</div>
+            </div>
+            <div class="text-${signal.type === 'buy' ? 'green' : 'red'}-400 font-medium">
+                ${signal.type.toUpperCase()}
+            </div>
+        `;
+        container.appendChild(signalElement);
+    });
+}
+
+// Initialize everything
+document.addEventListener('DOMContentLoaded', () => {
+    initChart();
+    // Load initial data
+    fetch('/api/initial-data')
+        .then(response => response.json())
+        .then(data => {
+            candleSeries.setData(data.candles);
+            updateUI(data);
+        });
+});
+
+// Initialize charts and real-time updates
+document.addEventListener('DOMContentLoaded', () => {
+    initializeCharts();
+    setupWebSocket();
+    loadInitialData();
+});
+
+function initializeCharts() {
+    // Risk Chart
+    const riskCtx = document.getElementById('riskChart').getContext('2d');
+    const riskChart = new Chart(riskCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Portfolio Risk',
+                data: [],
+                borderColor: '#38bdf8',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Performance Chart
+    const perfCtx = document.getElementById('performanceChart').getContext('2d');
+    const performanceChart = new Chart(perfCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Portfolio Value',
+                data: [],
+                borderColor: '#38bdf8',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Initialize other charts...
+}
+
+function setupWebSocket() {
+    const ws = new WebSocket('ws://localhost:8000/ws/analytics');
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        updateDashboard(data);
+    };
+}
+
+function updateDashboard(data) {
+    // Update risk metrics
+    document.getElementById('var95').textContent = formatPercent(data.risk.var_95);
+    document.getElementById('portfolioBeta').textContent = formatNumber(data.risk.beta);
+    document.getElementById('sharpeRatio').textContent = formatNumber(data.risk.sharpe_ratio);
+    document.getElementById('maxDrawdown').textContent = formatPercent(data.risk.max_drawdown);
+
+    // Update performance metrics
+    document.getElementById('totalReturn').textContent = formatPercent(data.performance.total_return);
+    document.getElementById('winRate').textContent = formatPercent(data.performance.win_rate);
+    document.getElementById('profitFactor').textContent = formatNumber(data.performance.profit_factor);
+    document.getElementById('avgTrade').textContent = formatCurrency(data.performance.avg_trade);
+
+    // Update charts
+    updateCharts(data);
+}
+
+function updateCharts(data) {
+    // Update each chart with new data
+    charts.forEach(chart => {
+        chart.data.labels = data.labels;
+        chart.data.datasets.forEach((dataset, i) => {
+            dataset.data = data.datasets[i];
+        });
+        chart.update();
+    });
+}
+</script>
+{% endblock %}
